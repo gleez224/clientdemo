@@ -64,7 +64,15 @@ const SCORE_REQUEST =
   "score": <number 0-100>,
   "pass": <boolean, true if score >= 70>,
   "strengths": [<string>, ...],
-  "improvements": [{ "message": <number>, "issue": <string> }, ...],
+  "improvements": [
+    {
+      "messageIndex": <1-based index of the user message being reviewed>,
+      "whatYouSaid": "<exact quote of what the user said in that message>",
+      "whyItFailed": "<one sentence, direct — why this hurt the sale>",
+      "whatToSayInstead": "<the exact alternative message they should have sent — real, direct, human — Jagged Writing Protocol: short sentences, no fluff, specific>"
+    }
+  ],
+  "closingSuggestion": <if score < 70: a persona-specific closing line the user could have used to turn this conversation around, written in Jagged Writing Protocol style — real attitude, short sentences, references the persona's specific objections. If score >= 70: null>,
   "summary": "<one sentence>"
 }`
 

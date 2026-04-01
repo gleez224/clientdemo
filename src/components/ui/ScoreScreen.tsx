@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 import { AnimatedCircularProgressBar } from '@/components/ui/AnimatedCircularProgressBar'
+import ImprovementCard from '@/components/ui/ImprovementCard'
+import ClosingSuggestionCard from '@/components/ui/ClosingSuggestionCard'
 import type { ScoreResult } from '@/types'
 
 interface ScoreScreenProps {
@@ -17,7 +19,6 @@ const outcomeLabel: Record<string, string> = {
   ghosted: 'GHOSTED',
 }
 
-
 const itemVariants = {
   hidden: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 400, damping: 28 } },
@@ -30,25 +31,23 @@ export default function ScoreScreen({
   onTryAgain,
   onSwitchClient,
 }: ScoreScreenProps) {
-  const { score, pass, strengths, improvements, summary } = scoreResult
+  const { score, pass, strengths, improvements, closingSuggestion, summary } = scoreResult
 
-  // Ring CSS transition: start at 0, set to score after paint so transition fires
   const [displayValue, setDisplayValue] = useState(0)
 
-  // Framer Motion counter for the number inside the ring
   const countMV = useMotionValue(0)
   const roundedCount = useTransform(countMV, (v) => String(Math.round(v)))
 
   useEffect(() => {
-    // Small delay so component is mounted before CSS transition fires
     const t = setTimeout(() => setDisplayValue(score), 80)
     animate(countMV, score, { duration: 1.5, ease: 'easeOut' })
     return () => clearTimeout(t)
   }, [score]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const strengthsDelay = 2.0
-  const improvementsDelay = strengthsDelay + strengths.length * 0.04 + 0.12
-  const buttonsDelay = improvementsDelay + improvements.length * 0.04 + 0.12
+  const closingDelay = strengthsDelay + strengths.length * 0.04 + 0.12
+  const improvementsDelay = closingDelay + (!pass && closingSuggestion ? 0.3 : 0)
+  const buttonsDelay = improvementsDelay + improvements.length * 0.05 + 0.2
 
   return (
     <motion.div
@@ -89,7 +88,6 @@ export default function ScoreScreen({
             gaugeSecondaryColor="rgba(94,46,136,0.15)"
             className="size-36 [--transition-length:1.5s]"
           />
-          {/* Overlay our own Framer Motion counter, hiding the component's built-in number */}
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.span className="text-3xl font-bold text-black dark:text-white tabular-nums">
               {roundedCount}
@@ -156,10 +154,17 @@ export default function ScoreScreen({
           </motion.div>
         )}
 
+        {/* Closing Suggestion — only on fail */}
+        {!pass && closingSuggestion && (
+          <div className="w-full">
+            <ClosingSuggestionCard suggestion={closingSuggestion} delay={closingDelay} />
+          </div>
+        )}
+
         {/* Improvements */}
         {improvements.length > 0 && (
           <motion.div
-            className="w-full glass rounded-2xl p-5"
+            className="w-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: improvementsDelay - 0.1 }}
@@ -167,32 +172,15 @@ export default function ScoreScreen({
             <p className="text-xs font-semibold tracking-widest uppercase text-black/40 dark:text-white/40 mb-3">
               Improvements
             </p>
-            <motion.ul
-              className="flex flex-col gap-2"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: {
-                  transition: { staggerChildren: 0.04, delayChildren: improvementsDelay },
-                },
-              }}
-            >
+            <div className="flex flex-col gap-3">
               {improvements.map((item, i) => (
-                <motion.li
+                <ImprovementCard
                   key={i}
-                  variants={itemVariants}
-                  className="flex items-start gap-2 text-sm text-black/80 dark:text-white/80"
-                >
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                  <span>
-                    <span className="font-semibold text-black/50 dark:text-white/40 mr-1">
-                      msg {item.message}
-                    </span>
-                    {item.issue}
-                  </span>
-                </motion.li>
+                  {...item}
+                  delay={improvementsDelay + i * 0.05}
+                />
               ))}
-            </motion.ul>
+            </div>
           </motion.div>
         )}
 

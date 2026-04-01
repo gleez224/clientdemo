@@ -30,10 +30,18 @@ export interface BusinessContext {
   pricing: string
 }
 
+export interface Improvement {
+  messageIndex: number
+  whatYouSaid: string
+  whyItFailed: string
+  whatToSayInstead: string
+}
+
 export interface ScoreResult {
   score: number
   pass: boolean
   strengths: string[]
-  improvements: { message: number; issue: string }[]
+  improvements: Improvement[]
+  closingSuggestion?: string | null
   summary: string
 }

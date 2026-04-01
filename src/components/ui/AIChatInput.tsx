@@ -3,9 +3,11 @@
 import { useEffect, useRef, useCallback, useTransition } from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { SendIcon, LoaderIcon } from "lucide-react";
+import { SendIcon, LoaderIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
+import { useTextSelection } from "@/hooks/useTextSelection";
+import { TextShimmer } from "@/components/ui/TextShimmer";
 
 interface UseAutoResizeTextareaProps {
   minHeight: number;
@@ -92,13 +94,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             transition={{ duration: 0.2 }}
           />
         )}
-        {props.onChange && (
-          <div
-            className="absolute bottom-2 right-2 opacity-0 w-2 h-2 bg-violet-500 rounded-full"
-            style={{ animation: 'none' }}
-            id="textarea-ripple"
-          />
-        )}
       </div>
     )
   }
@@ -106,7 +101,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
 Textarea.displayName = "Textarea"
 
-// Added prop: onSend — called with trimmed message text when user submits
 interface AIChatInputProps {
   onSend?: (text: string) => void;
 }
@@ -114,6 +108,7 @@ interface AIChatInputProps {
 export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   const [value, setValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [, startTransition] = useTransition();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
@@ -121,6 +116,8 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
     maxHeight: 200,
   });
   const [inputFocused, setInputFocused] = useState(false);
+
+  const selection = useTextSelection(textareaRef);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -151,8 +148,44 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
     }
   };
 
+  const handleEnhance = async () => {
+    if (!selection.hasSelection || isEnhancing) return;
+
+    const { selectedText, selectionStart, selectionEnd } = selection;
+    const before = value.substring(0, selectionStart);
+    const after = value.substring(selectionEnd);
+
+    setIsEnhancing(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system:
+            'You are a sales message rewriter. Apply the Jagged Writing Protocol. ' +
+            'Short sentences. No fluff. No AI words. Real human attitude. ' +
+            'Keep the same core meaning. Return ONLY the rewritten text. Nothing else.',
+          messages: [
+            { role: 'user', content: `Rewrite: "${selectedText}"` },
+          ],
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const enhanced: string = data.content[0].text.trim().replace(/^"|"$/g, '');
+
+      setValue(before + enhanced + after);
+      adjustHeight();
+    } catch (err) {
+      console.error('Enhance failed:', err);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   return (
-    // min-h-0 replaces min-h-screen so the component fits as a chat bottom bar
     <div className="min-h-0 flex flex-col w-full items-center justify-center bg-white/[0.03] text-white p-4 relative overflow-hidden">
 
       <div className="w-full max-w-2xl mx-auto relative">
@@ -168,7 +201,48 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
             animate={{ scale: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="p-4">
+            <div className="p-4 relative">
+              {/* Shimmer overlay while enhancing */}
+              <AnimatePresence>
+                {isEnhancing && (
+                  <motion.div
+                    className="absolute inset-4 flex items-center justify-start px-4 py-3 pointer-events-none z-20"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <TextShimmer className="text-sm text-white/70">
+                      Enhancing your message...
+                    </TextShimmer>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Floating Enhance button */}
+              <AnimatePresence>
+                {selection.hasSelection && !isEnhancing && (
+                  <motion.button
+                    key="enhance-btn"
+                    type="button"
+                    onClick={handleEnhance}
+                    className="absolute z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white shadow-lg"
+                    style={{
+                      top: Math.max(4, selection.buttonTop + 16),
+                      left: Math.max(8, selection.buttonLeft + 16),
+                      background: 'linear-gradient(90deg, #de3582, #5e2e88)',
+                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  >
+                    <Sparkles size={11} />
+                    Enhance
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
               <Textarea
                 ref={textareaRef}
                 value={value}
@@ -178,6 +252,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
                 onBlur={() => setInputFocused(false)}
                 placeholder="Type your message..."
                 containerClassName="w-full"
+                disabled={isEnhancing}
                 className={cn(
                   "w-full px-4 py-3",
                   "resize-none",
@@ -186,7 +261,8 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
                   "text-white/90 text-sm",
                   "focus:outline-none",
                   "placeholder:text-white/20",
-                  "min-h-[60px]"
+                  "min-h-[60px]",
+                  isEnhancing && "opacity-30"
                 )}
                 style={{ overflow: "hidden" }}
                 showRing={false}
@@ -199,7 +275,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
                 onClick={handleSendMessage}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={isTyping || !value.trim()}
+                disabled={isTyping || isEnhancing || !value.trim()}
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                   "flex items-center gap-2",
