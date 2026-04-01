@@ -33,11 +33,24 @@ Return this exact JSON structure with no other text:
       "followers": number,
       "following": number,
       "description": "string (one line, under 10 words)",
-      "imageQuery": "string (3 words for image search e.g. serious male fitness)",
+      "gender": "male" or "female" (match the name you chose),
       "corePrompt": "string (2-4 sentences: who they are, what platform/audience they have, why they are a prospect for this specific offer, and their specific objections to the pricing and pitch)"
     }
   ]
 }`
+}
+
+async function fetchPortrait(gender: 'male' | 'female'): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://randomuser.me/api/?gender=${gender}&results=1&inc=picture&nat=us`
+    )
+    if (!res.ok) return ''
+    const data = await res.json()
+    return data.results[0]?.picture?.large ?? ''
+  } catch {
+    return ''
+  }
 }
 
 export function useGeneratePersonas() {
@@ -72,19 +85,24 @@ export function useGeneratePersonas() {
           followers: number
           following: number
           description: string
-          imageQuery: string
+          gender: 'male' | 'female'
           corePrompt: string
         }>
       }
 
-      const personas: Persona[] = parsed.personas.map((p) => ({
+      // Fetch all portraits in parallel
+      const portraits = await Promise.all(
+        parsed.personas.map((p) => fetchPortrait(p.gender))
+      )
+
+      const personas: Persona[] = parsed.personas.map((p, i) => ({
         id: p.id,
         name: p.name,
         archetype: p.archetype,
         followers: Number(p.followers),
         following: Number(p.following),
         description: p.description,
-        image: `https://source.unsplash.com/800x800/?${encodeURIComponent(p.imageQuery)},portrait`,
+        image: portraits[i],
         systemPrompt: `${p.corePrompt}\n\n${SPEECH_RULES}\n\n${OUTCOME_RULES}`,
       }))
 
