@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import type { Persona } from '@/data/personas'
 import type { Message } from '@/types'
@@ -17,13 +17,96 @@ interface ChatScreenProps {
 }
 
 export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
+  // Display messages — never includes the hidden seed trigger
   const [messages, setMessages] = useState<Message[]>([])
+
+  // Full API history (trigger + all turns) — ref is source of truth in async callbacks
+  const chatHistoryRef = useRef<Message[]>([])
+
+  const [isSeeding, setIsSeeding] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Calls the API with the current chatHistoryRef and appends the assistant reply
+  const callApi = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: chatHistoryRef.current,
+          system: persona.systemPrompt,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: data.content[0].text,
+      }
+      chatHistoryRef.current = [...chatHistoryRef.current, assistantMsg]
+      setMessages(prev => [...prev, assistantMsg])
+    } catch (err) {
+      setError('Something went wrong. Tap Retry to try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [persona.systemPrompt])
+
+  // Seed the conversation on mount: send hidden trigger, store both sides, show only opening line
+  useEffect(() => {
+    const seed = async () => {
+      setIsSeeding(true)
+      setIsLoading(true)
+      setError(null)
+      const trigger: Message = {
+        role: 'user',
+        content: `Start the conversation. Open with your first line as ${persona.name}. Be in character immediately.`,
+      }
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [trigger],
+            system: persona.systemPrompt,
+          }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        const openingLine: Message = {
+          role: 'assistant',
+          content: data.content[0].text,
+        }
+        // Store trigger + opening in history — trigger is hidden from display
+        chatHistoryRef.current = [trigger, openingLine]
+        // Only the assistant opening line goes into display messages
+        setMessages([openingLine])
+      } catch (err) {
+        setError('Failed to connect. Check your connection and go back to retry.')
+      } finally {
+        setIsLoading(false)
+        setIsSeeding(false)
+      }
+    }
+    seed()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSend = (text: string) => {
-    setMessages(prev => [...prev, { role: 'user', content: text }])
-    setIsLoading(true)
-    setTimeout(() => setIsLoading(false), 2000)
+    if (isLoading || isSeeding) return
+    const userMsg: Message = { role: 'user', content: text }
+    // Append to display immediately
+    setMessages(prev => [...prev, userMsg])
+    // Append to ref before the async call — prevents stale closure on retry
+    chatHistoryRef.current = [...chatHistoryRef.current, userMsg]
+    callApi()
+  }
+
+  const handleRetry = () => {
+    // chatHistoryRef already ends with the failed user message — just re-call the API
+    callApi()
   }
 
   return (
@@ -44,7 +127,6 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
           <div className={`w-10 h-10 shrink-0 rounded-full overflow-hidden ${isLoading ? 'animate-pulse' : ''}`}>
             <VoicePoweredOrb enableVoiceControl={false} />
           </div>
-
           <div>
             <span className="text-base font-bold text-black dark:text-white">
               {persona.name}
@@ -54,6 +136,12 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
             </span>
           </div>
         </div>
+
+        {isSeeding && (
+          <span className="text-xs text-black/40 dark:text-white/40 shrink-0">
+            Connecting…
+          </span>
+        )}
       </div>
 
       {/* Message list */}
@@ -75,10 +163,26 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
             <ChatBubbleMessage isLoading={true} />
           </ChatBubble>
         )}
+
+        {error && !isLoading && (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+            {/* Only show retry if there is a pending user message to re-send */}
+            {chatHistoryRef.current.length > 0 &&
+              chatHistoryRef.current[chatHistoryRef.current.length - 1].role === 'user' && (
+                <button
+                  onClick={handleRetry}
+                  className="text-sm font-semibold text-black dark:text-white underline underline-offset-2 hover:opacity-70 transition-opacity"
+                >
+                  Retry
+                </button>
+              )}
+          </div>
+        )}
       </ChatMessageList>
 
-      {/* Input bar */}
-      <div className="shrink-0 border-t border-black/8 dark:border-white/8">
+      {/* Input — pointer-events disabled while loading or seeding */}
+      <div className={`shrink-0 border-t border-black/8 dark:border-white/8 ${isLoading || isSeeding ? 'pointer-events-none opacity-50' : ''}`}>
         <AnimatedAIChat onSend={handleSend} />
       </div>
     </div>
