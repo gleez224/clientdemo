@@ -228,87 +228,79 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
   return (
     <div className="flex flex-col flex-1 min-h-0 relative">
       {/* Identity bar */}
-      <div className="flex items-center gap-4 px-6 py-3 border-b border-black/8 dark:border-white/8 bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl shrink-0">
+      <div className="flex flex-col px-6 pt-5 pb-4 border-b border-black/8 dark:border-white/8 bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl shrink-0">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-sm font-semibold text-black/45 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors duration-150"
+          className="flex items-center gap-1.5 text-xs font-medium text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors duration-150 w-fit"
         >
-          <ArrowLeft size={16} strokeWidth={1.75} />
+          <ArrowLeft size={12} strokeWidth={2} />
           Switch client
         </button>
 
-        <div className="h-4 w-[1px] bg-black/10 dark:bg-white/10" />
+        <p className="mt-2 text-xl font-bold text-black dark:text-white leading-tight">
+          {persona.name}
+        </p>
 
-        <div className="flex items-center gap-3 flex-1">
-          <div>
-            <span className="text-base font-bold text-black dark:text-white">
-              {persona.name}
-            </span>
-            <span className="ml-2 text-sm text-black/45 dark:text-white/50">
-              {persona.archetype}
-            </span>
-          </div>
-        </div>
-
-        {isSeeding && (
-          <span className="text-xs text-black/40 dark:text-white/40 shrink-0">
-            Connecting…
-          </span>
-        )}
-
-        {isScoring && (
-          <span className="text-xs text-black/40 dark:text-white/40 shrink-0">
-            Scoring…
-          </span>
-        )}
+        <p className="mt-0.5 text-[13px] text-black/50 dark:text-white/50">
+          {persona.archetype}
+          {isSeeding && <span className="ml-2">· Connecting…</span>}
+          {isScoring && <span className="ml-2">· Scoring…</span>}
+        </p>
       </div>
 
-      {/* Message list */}
-      <ChatMessageList className="flex-1">
-        {messages.map((msg, i) => (
-          <ChatBubble key={i} variant={msg.role === 'user' ? 'sent' : 'received'}>
-            {msg.role === 'assistant' && (
-              <ChatBubbleAvatar src={persona.image} fallback={persona.name[0]} />
+      {/* Chat column — centered container */}
+      <div className="flex-1 min-h-0 flex flex-col px-4 py-3 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col w-full max-w-[780px] mx-auto bg-white/[0.02] dark:bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+
+          {/* Message list */}
+          <ChatMessageList className="flex-1">
+            {messages.map((msg, i) => (
+              <ChatBubble key={i} variant={msg.role === 'user' ? 'sent' : 'received'}>
+                {msg.role === 'assistant' && (
+                  <ChatBubbleAvatar src={persona.image} fallback={persona.name[0]} />
+                )}
+                <ChatBubbleMessage variant={msg.role === 'user' ? 'sent' : 'received'}>
+                  {msg.content}
+                </ChatBubbleMessage>
+              </ChatBubble>
+            ))}
+
+            {isLoading && (
+              <ChatBubble variant="received">
+                <ChatBubbleAvatar src={persona.image} fallback={persona.name[0]} />
+                <ChatBubbleMessage isLoading={true} />
+              </ChatBubble>
             )}
-            <ChatBubbleMessage variant={msg.role === 'user' ? 'sent' : 'received'}>
-              {msg.content}
-            </ChatBubbleMessage>
-          </ChatBubble>
-        ))}
 
-        {isLoading && (
-          <ChatBubble variant="received">
-            <ChatBubbleAvatar src={persona.image} fallback={persona.name[0]} />
-            <ChatBubbleMessage isLoading={true} />
-          </ChatBubble>
-        )}
+            {error && !isLoading && (
+              <div className="flex flex-col items-center gap-2 py-4">
+                <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+                {chatHistoryRef.current.length > 0 &&
+                  chatHistoryRef.current[chatHistoryRef.current.length - 1].role === 'user' && (
+                    <button
+                      onClick={handleRetry}
+                      className="text-sm font-semibold text-black dark:text-white underline underline-offset-2 hover:opacity-70 transition-opacity"
+                    >
+                      Retry
+                    </button>
+                  )}
+              </div>
+            )}
+          </ChatMessageList>
 
-        {error && !isLoading && (
-          <div className="flex flex-col items-center gap-2 py-4">
-            <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-            {chatHistoryRef.current.length > 0 &&
-              chatHistoryRef.current[chatHistoryRef.current.length - 1].role === 'user' && (
-                <button
-                  onClick={handleRetry}
-                  className="text-sm font-semibold text-black dark:text-white underline underline-offset-2 hover:opacity-70 transition-opacity"
-                >
-                  Retry
-                </button>
-              )}
+          {/* Orb — 48×48 ambient indicator, bottom left */}
+          <div className="shrink-0 px-4 pt-3 pb-1 flex">
+            <div className={`w-12 h-12 rounded-full overflow-hidden opacity-80 ${isLoading ? 'animate-pulse' : ''}`}>
+              <VoicePoweredOrb enableVoiceControl={false} />
+            </div>
           </div>
-        )}
-      </ChatMessageList>
 
-      {/* Orb — 48×48 ambient indicator, bottom left */}
-      <div className="shrink-0 px-4 pt-3 pb-1 flex">
-        <div className={`w-12 h-12 rounded-full overflow-hidden opacity-80 ${isLoading ? 'animate-pulse' : ''}`}>
-          <VoicePoweredOrb enableVoiceControl={false} />
+          {/* Input */}
+          <div className={`shrink-0 border-t border-white/[0.06] ${isLoading || isSeeding || !!conversationOutcome ? 'pointer-events-none opacity-50' : ''}`}>
+            <AnimatedAIChat onSend={handleSend} />
+          </div>
+
         </div>
-      </div>
-
-      {/* Input */}
-      <div className={`shrink-0 border-t border-black/8 dark:border-white/8 ${isLoading || isSeeding || !!conversationOutcome ? 'pointer-events-none opacity-50' : ''}`}>
-        <AnimatedAIChat onSend={handleSend} />
       </div>
 
       {/* Score screen overlay — renders when scoreResult is ready */}

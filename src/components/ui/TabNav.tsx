@@ -14,14 +14,14 @@ const tabs: { id: Tab; label: string }[] = [
 
 export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
   return (
-    <nav className="flex items-center px-6 border-b border-black/8 dark:border-white/8 bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl">
+    <nav className="flex items-center px-6 py-1 border-b border-black/8 dark:border-white/8 bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl">
       {/* Tabs */}
       <div className="flex items-center gap-1 flex-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="relative px-5 py-4 text-base font-semibold tracking-wide transition-colors duration-150 group"
+            className="relative px-6 py-4 text-base font-semibold tracking-wide transition-colors duration-150 group"
           >
             <span
               className={
