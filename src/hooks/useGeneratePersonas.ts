@@ -23,6 +23,10 @@ Each persona must:
 - Have a realistic audience or follower count that makes them a valid prospect
 - Have a corePrompt that puts them in character with specific knowledge of this offer
 
+Keep each corePrompt concise — maximum 150 words.
+Focus on: who they are, their unlock condition, their main objection, and the outcome tags.
+Do not write lengthy paragraphs.
+
 Return this exact JSON structure with no other text:
 {
   "personas": [
@@ -34,7 +38,7 @@ Return this exact JSON structure with no other text:
       "following": number,
       "description": "string (one line, under 10 words)",
       "gender": "male" or "female" (match the name you chose),
-      "corePrompt": "string (2-4 sentences: who they are, what platform/audience they have, why they are a prospect for this specific offer, and their specific objections to the pricing and pitch)"
+      "corePrompt": "string (who they are, their platform/audience, their specific objection to this offer and pricing, and their unlock condition — max 150 words)"
     }
   ]
 }`
@@ -68,6 +72,7 @@ export function useGeneratePersonas() {
           system:
             'You are a sales training app that generates realistic client personas for practice pitches. Always respond with valid JSON only. No other text. No markdown. No code fences.',
           messages: [{ role: 'user', content: buildPrompt(ctx) }],
+          maxTokens: 4000,
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -77,17 +82,39 @@ export function useGeneratePersonas() {
         .replace(/^```(?:json)?\n?/, '')
         .replace(/\n?```$/, '')
         .trim()
-      const parsed = JSON.parse(jsonText) as {
-        personas: Array<{
-          id: string
-          name: string
-          archetype: string
-          followers: number
-          following: number
-          description: string
-          gender: 'male' | 'female'
-          corePrompt: string
-        }>
+      type RawPersona = {
+        id: string
+        name: string
+        archetype: string
+        followers: number
+        following: number
+        description: string
+        gender: 'male' | 'female'
+        corePrompt: string
+      }
+      type ParsedResult = { personas: RawPersona[] }
+
+      let parsed: ParsedResult
+      try {
+        parsed = JSON.parse(jsonText) as ParsedResult
+      } catch {
+        // Attempt to salvage fully-written personas from a truncated response
+        const lastValidIndex = jsonText.lastIndexOf('},')
+        if (lastValidIndex > 0) {
+          try {
+            const partial = jsonText.substring(0, lastValidIndex) + '}]}'
+            const salvaged = JSON.parse(partial) as ParsedResult
+            if (salvaged.personas?.length > 0) {
+              parsed = salvaged
+            } else {
+              throw new Error('empty')
+            }
+          } catch {
+            throw new Error('Persona generation failed — response was cut off. Try again.')
+          }
+        } else {
+          throw new Error('Persona generation failed — response was cut off. Try again.')
+        }
       }
 
       // Fetch all portraits in parallel
@@ -109,7 +136,8 @@ export function useGeneratePersonas() {
       return personas
     } catch (err) {
       console.error('Persona generation failed:', err)
-      setError('Failed to generate personas. Check your connection and try again.')
+      const msg = err instanceof Error ? err.message : null
+      setError(msg ?? 'Generation timed out — tap retry to try again.')
       return null
     } finally {
       setIsGenerating(false)

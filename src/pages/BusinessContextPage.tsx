@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import BusinessOnboarding from '@/components/ui/BusinessOnboarding'
 import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
@@ -10,11 +11,21 @@ interface BusinessContextPageProps {
 
 export default function BusinessContextPage({ onComplete }: BusinessContextPageProps) {
   const { generate, isGenerating, error } = useGeneratePersonas()
+  const [lastCtx, setLastCtx] = useState<BusinessContext | null>(null)
 
   const handleSubmit = async (ctx: BusinessContext) => {
+    setLastCtx(ctx)
     const personas = await generate(ctx)
     if (personas) {
       onComplete(ctx, personas)
+    }
+  }
+
+  const handleRetry = async () => {
+    if (!lastCtx) return
+    const personas = await generate(lastCtx)
+    if (personas) {
+      onComplete(lastCtx, personas)
     }
   }
 
@@ -32,9 +43,19 @@ export default function BusinessContextPage({ onComplete }: BusinessContextPageP
           >
             <BusinessOnboarding onSubmit={handleSubmit} />
             {error && (
-              <p className="text-center text-sm text-red-500 dark:text-red-400 pb-6 px-6">
-                {error}
-              </p>
+              <div className="flex flex-col items-center gap-3 pb-6 px-6">
+                <p className="text-center text-sm text-red-500 dark:text-red-400">
+                  {error}
+                </p>
+                {lastCtx && (
+                  <button
+                    onClick={handleRetry}
+                    className="px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-accent text-white hover:opacity-90 transition-opacity"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
             )}
           </motion.div>
         ) : (

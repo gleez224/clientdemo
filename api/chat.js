@@ -7,12 +7,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { messages, system } = req.body;
+  const { messages, system, maxTokens } = req.body;
 
   try {
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      max_tokens: maxTokens ?? 1024,
       system: system,
       messages: messages,
     });
