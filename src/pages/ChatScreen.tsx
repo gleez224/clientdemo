@@ -48,6 +48,14 @@ function extractOutcomeTag(content: string): { outcome: ConversationOutcome | nu
   }
 }
 
+function stripOutcomeTags(content: string): string {
+  return content
+    .replace(/\[OUTCOME:CLOSED\]/gi, '')
+    .replace(/\[OUTCOME:WALKED\]/gi, '')
+    .replace(/\[OUTCOME:GHOSTED\]/gi, '')
+    .trim()
+}
+
 function detectOutcome(
   content: string,
   isJordan: boolean,
@@ -160,20 +168,23 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
 
-      // Extract and strip any [OUTCOME:X] tag before displaying
-      const { outcome: tagOutcome, clean } = extractOutcomeTag(data.content[0].text)
+      const rawContent = data.content[0].text
+      // 1. Detect on raw content
+      const { outcome: tagOutcome } = extractOutcomeTag(rawContent)
+      // 2. Strip all outcome tags for display
+      const displayContent = stripOutcomeTags(rawContent)
 
       const assistantMsg: Message = {
         role: 'assistant',
-        content: clean,
+        content: displayContent,
       }
       chatHistoryRef.current = [...chatHistoryRef.current, assistantMsg]
       assistantCountRef.current += 1
       setMessages(prev => [...prev, assistantMsg])
 
       // Tag-based detection first, fall back to phrase matching
-      const outcome = tagOutcome ?? detectOutcome(clean, isJordan, assistantCountRef.current)
-      console.log('[OUTCOME] tag:', tagOutcome, '| phrase:', detectOutcome(clean, isJordan, assistantCountRef.current), '| final:', outcome)
+      const outcome = tagOutcome ?? detectOutcome(rawContent, isJordan, assistantCountRef.current)
+      console.log('[OUTCOME] tag:', tagOutcome, '| phrase:', detectOutcome(rawContent, isJordan, assistantCountRef.current), '| final:', outcome)
       if (outcome) {
         console.log('[OUTCOME] Setting conversationOutcome →', outcome, '— firing fetchScore')
         setConversationOutcome(outcome)
@@ -209,10 +220,9 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
-        const { clean } = extractOutcomeTag(data.content[0].text)
         const openingLine: Message = {
           role: 'assistant',
-          content: clean,
+          content: stripOutcomeTags(data.content[0].text),
         }
         if (cancelled) return
         chatHistoryRef.current = [trigger, openingLine]
