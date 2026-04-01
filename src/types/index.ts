@@ -21,3 +21,11 @@ export interface AppState {
   appEntered: boolean
   activeTab: Tab
 }
+
+export interface ScoreResult {
+  score: number
+  pass: boolean
+  strengths: string[]
+  improvements: { message: number; issue: string }[]
+  summary: string
+}
