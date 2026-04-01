@@ -50,18 +50,18 @@ export function ProfileCard({
   }
 
   const contentVariants = {
-    hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
+    hidden: { opacity: 0, y: 20, filter: shouldReduceMotion ? "blur(0px)" : "blur(4px)" },
     visible: {
       opacity: 1, y: 0, filter: "blur(0px)",
-      transition: { type: "spring", stiffness: 400, damping: 28, mass: 0.6, staggerChildren: 0.08, delayChildren: 0.1 },
+      transition: { type: "spring", stiffness: 400, damping: 28, mass: 0.6, clamp: true, staggerChildren: 0.08, delayChildren: 0.1 },
     },
   }
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 15, scale: 0.95, filter: "blur(2px)" },
+    hidden: { opacity: 0, y: 15, scale: 0.95, filter: shouldReduceMotion ? "blur(0px)" : "blur(2px)" },
     visible: {
       opacity: 1, y: 0, scale: 1, filter: "blur(0px)",
-      transition: { type: "spring", stiffness: 400, damping: 25, mass: 0.5 },
+      transition: { type: "spring", stiffness: 400, damping: 25, mass: 0.5, clamp: true },
     },
   }
 
