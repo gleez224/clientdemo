@@ -7,10 +7,12 @@ import FrameworkPage from '@/pages/FrameworkPage'
 import DemoPage from '@/pages/DemoPage'
 import TabNav from '@/components/ui/TabNav'
 
-const tabContent: Record<Tab, React.ReactNode> = {
-  causes: <CausesPage />,
-  framework: <FrameworkPage />,
-  demo: <DemoPage />,
+function renderTab(tab: Tab) {
+  switch (tab) {
+    case 'causes':    return <CausesPage />
+    case 'framework': return <FrameworkPage />
+    case 'demo':      return <DemoPage />
+  }
 }
 
 export default function App() {
@@ -61,7 +63,7 @@ export default function App() {
                   transition={{ duration: 0.2, ease: 'easeInOut' }}
                   className="flex flex-col flex-1"
                 >
-                  {tabContent[activeTab]}
+                  {renderTab(activeTab)}
                 </motion.main>
               </AnimatePresence>
             </motion.div>
