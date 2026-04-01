@@ -11,10 +11,11 @@ export interface Persona {
   id: string
   name: string
   archetype: string
-  followers: string
-  following: string
+  followers: number
+  following: number
   description: string
   systemPrompt: string
+  image: string
 }
 
 export interface AppState {

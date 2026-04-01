@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
 import { ProfileCard } from '@/components/ui/ProfileCard'
-import BusinessOnboarding from '@/components/ui/BusinessOnboarding'
+import BusinessContextPage from '@/pages/BusinessContextPage'
 import ChatScreen from '@/pages/ChatScreen'
-import { personas, formatCount, type Persona } from '@/data/personas'
+import { formatCount } from '@/data/personas'
+import type { Persona } from '@/data/personas'
 import type { BusinessContext } from '@/types'
 
 const gridVariants = {
@@ -20,13 +21,25 @@ const cardVariants = {
 
 export default function DemoPage() {
   const [businessContext, setBusinessContext] = useState<BusinessContext | null>(null)
+  const [generatedPersonas, setGeneratedPersonas] = useState<Persona[] | null>(null)
   const [activePersona, setActivePersona] = useState<Persona | null>(null)
+
+  const handleComplete = (ctx: BusinessContext, personas: Persona[]) => {
+    setBusinessContext(ctx)
+    setGeneratedPersonas(personas)
+  }
+
+  const handleChangePitch = () => {
+    setBusinessContext(null)
+    setGeneratedPersonas(null)
+    setActivePersona(null)
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <AnimatePresence mode="wait">
 
-        {/* ── Onboarding ── */}
+        {/* ── Onboarding + loading ── */}
         {!businessContext && (
           <motion.div
             key="onboarding"
@@ -36,12 +49,12 @@ export default function DemoPage() {
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="flex flex-col flex-1 min-h-0"
           >
-            <BusinessOnboarding onSubmit={setBusinessContext} />
+            <BusinessContextPage onComplete={handleComplete} />
           </motion.div>
         )}
 
         {/* ── Persona select ── */}
-        {businessContext && !activePersona && (
+        {businessContext && generatedPersonas && !activePersona && (
           <motion.div
             key="select"
             variants={gridVariants}
@@ -50,10 +63,9 @@ export default function DemoPage() {
             exit="exit"
             className="flex-1 px-6 py-10 max-w-6xl mx-auto w-full"
           >
-            {/* Header */}
             <div className="mb-10">
               <button
-                onClick={() => setBusinessContext(null)}
+                onClick={handleChangePitch}
                 className="flex items-center gap-1.5 text-xs font-medium text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors mb-4"
               >
                 <ArrowLeft size={12} strokeWidth={2} />
@@ -67,9 +79,8 @@ export default function DemoPage() {
               </p>
             </div>
 
-            {/* Persona grid */}
             <div className="flex flex-wrap gap-6 justify-center md:justify-start">
-              {personas.map((persona) => (
+              {generatedPersonas.map((persona) => (
                 <motion.div
                   key={persona.id}
                   variants={cardVariants}
@@ -92,7 +103,7 @@ export default function DemoPage() {
         )}
 
         {/* ── Chat ── */}
-        {businessContext && activePersona && (
+        {businessContext && generatedPersonas && activePersona && (
           <motion.div
             key={`chat-${activePersona.id}`}
             initial={{ opacity: 0, x: 60 }}
