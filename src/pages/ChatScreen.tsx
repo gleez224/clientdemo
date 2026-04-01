@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import type { Persona } from '@/data/personas'
-import type { Message, ScoreResult } from '@/types'
+import type { Message, ScoreResult, BusinessContext } from '@/types'
 import {
   ChatBubble,
   ChatBubbleAvatar,
@@ -14,6 +14,7 @@ import ScoreScreen from '@/components/ui/ScoreScreen'
 
 interface ChatScreenProps {
   persona: Persona
+  businessContext: BusinessContext
   onBack: () => void
 }
 
@@ -67,7 +68,13 @@ const SCORE_REQUEST =
   "summary": "<one sentence>"
 }`
 
-export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
+export default function ChatScreen({ persona, businessContext, onBack }: ChatScreenProps) {
+  const fullSystemPrompt =
+    `The person pitching you sells ${businessContext.whatYouSell} to ${businessContext.targetClient}. ` +
+    `Their offer is: ${businessContext.pitch}. Their pricing: ${businessContext.pricing}. ` +
+    `React to THIS specifically — not generic sales pitches.\n\n` +
+    persona.systemPrompt
+
   const [messages, setMessages] = useState<Message[]>([])
   const chatHistoryRef = useRef<Message[]>([])
   const assistantCountRef = useRef(0)
@@ -94,7 +101,7 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
         body: JSON.stringify({
           // Temp copy — does not mutate chatHistoryRef
           messages: [...chatHistoryRef.current, scoringMsg],
-          system: persona.systemPrompt,
+          system: fullSystemPrompt,
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -128,7 +135,7 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: chatHistoryRef.current,
-          system: persona.systemPrompt,
+          system: fullSystemPrompt,
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -177,7 +184,7 @@ export default function ChatScreen({ persona, onBack }: ChatScreenProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: [trigger],
-            system: persona.systemPrompt,
+            system: fullSystemPrompt,
           }),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)

@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowLeft } from 'lucide-react'
 import { ProfileCard } from '@/components/ui/ProfileCard'
+import BusinessOnboarding from '@/components/ui/BusinessOnboarding'
 import ChatScreen from '@/pages/ChatScreen'
 import { personas, formatCount, type Persona } from '@/data/personas'
+import type { BusinessContext } from '@/types'
 
 const gridVariants = {
   hidden: {},
@@ -16,12 +19,29 @@ const cardVariants = {
 }
 
 export default function DemoPage() {
+  const [businessContext, setBusinessContext] = useState<BusinessContext | null>(null)
   const [activePersona, setActivePersona] = useState<Persona | null>(null)
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <AnimatePresence mode="wait">
-        {activePersona === null ? (
+
+        {/* ── Onboarding ── */}
+        {!businessContext && (
+          <motion.div
+            key="onboarding"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="flex flex-col flex-1 min-h-0"
+          >
+            <BusinessOnboarding onSubmit={setBusinessContext} />
+          </motion.div>
+        )}
+
+        {/* ── Persona select ── */}
+        {businessContext && !activePersona && (
           <motion.div
             key="select"
             variants={gridVariants}
@@ -32,6 +52,13 @@ export default function DemoPage() {
           >
             {/* Header */}
             <div className="mb-10">
+              <button
+                onClick={() => setBusinessContext(null)}
+                className="flex items-center gap-1.5 text-xs font-medium text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors mb-4"
+              >
+                <ArrowLeft size={12} strokeWidth={2} />
+                Change your pitch
+              </button>
               <h2 className="text-3xl font-bold text-black dark:text-white mb-2">
                 Choose Your Client
               </h2>
@@ -62,7 +89,10 @@ export default function DemoPage() {
               ))}
             </div>
           </motion.div>
-        ) : (
+        )}
+
+        {/* ── Chat ── */}
+        {businessContext && activePersona && (
           <motion.div
             key={`chat-${activePersona.id}`}
             initial={{ opacity: 0, x: 60 }}
@@ -73,10 +103,12 @@ export default function DemoPage() {
           >
             <ChatScreen
               persona={activePersona}
+              businessContext={businessContext}
               onBack={() => setActivePersona(null)}
             />
           </motion.div>
         )}
+
       </AnimatePresence>
     </div>
   )

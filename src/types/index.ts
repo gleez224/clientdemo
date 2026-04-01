@@ -22,6 +22,13 @@ export interface AppState {
   activeTab: Tab
 }
 
+export interface BusinessContext {
+  whatYouSell: string
+  targetClient: string
+  pitch: string
+  pricing: string
+}
+
 export interface ScoreResult {
   score: number
   pass: boolean
