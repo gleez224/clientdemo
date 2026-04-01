@@ -62,38 +62,22 @@ function useAutoResizeTextarea({
 interface TextareaProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   containerClassName?: string;
-  showRing?: boolean;
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, containerClassName, showRing = true, ...props }, ref) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-
+  ({ className, containerClassName, ...props }, ref) => {
     return (
-      <div className={cn("relative", containerClassName)}>
+      <div className={cn("relative flex-1", containerClassName)}>
         <textarea
           className={cn(
-            "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-            "transition-all duration-200 ease-in-out",
-            "placeholder:text-muted-foreground",
+            "w-full bg-transparent border-none outline-none resize-none",
+            "text-white/90 text-sm placeholder:text-white/25",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            showRing ? "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0" : "",
             className
           )}
           ref={ref}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           {...props}
         />
-        {showRing && isFocused && (
-          <motion.span
-            className="absolute inset-0 rounded-md pointer-events-none ring-2 ring-offset-0 ring-violet-500/30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          />
-        )}
       </div>
     )
   }
@@ -112,10 +96,9 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   const [, startTransition] = useTransition();
   const [, setMousePosition] = useState({ x: 0, y: 0 });
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 44,
-    maxHeight: 200,
+    minHeight: 28,
+    maxHeight: 160,
   });
-  const [, setInputFocused] = useState(false);
 
   const selection = useTextSelection(textareaRef);
 
@@ -186,136 +169,86 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   };
 
   return (
-    <div className="min-h-0 flex flex-col w-full items-center justify-center bg-white/[0.03] text-white px-8 py-3 relative overflow-hidden">
+    <div className="flex items-center gap-3 w-full px-8 h-14 bg-white/[0.03] text-white relative">
 
-      <div className="w-full relative">
-        <motion.div
-          className="relative z-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <motion.div
-            className="relative backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] shadow-2xl"
-            initial={{ scale: 0.98 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="p-4 relative">
-              {/* Shimmer overlay while enhancing */}
-              <AnimatePresence>
-                {isEnhancing && (
-                  <motion.div
-                    className="absolute inset-4 flex items-center justify-start px-4 py-3 pointer-events-none z-20"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <TextShimmer className="text-sm text-white/70">
-                      Enhancing your message...
-                    </TextShimmer>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Floating Enhance button */}
-              <AnimatePresence>
-                {selection.hasSelection && !isEnhancing && (
-                  <motion.button
-                    key="enhance-btn"
-                    type="button"
-                    onClick={handleEnhance}
-                    className="absolute z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white shadow-lg"
-                    style={{
-                      top: Math.max(4, selection.buttonTop + 16),
-                      left: Math.max(8, selection.buttonLeft + 16),
-                      background: 'linear-gradient(90deg, #de3582, #5e2e88)',
-                    }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  >
-                    <Sparkles size={11} />
-                    Enhance
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              <Textarea
-                ref={textareaRef}
-                value={value}
-                onChange={(e) => { setValue(e.target.value); adjustHeight(); }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                placeholder="Type your message..."
-                containerClassName="w-full"
-                disabled={isEnhancing}
-                className={cn(
-                  "w-full px-4 py-3",
-                  "resize-none",
-                  "bg-transparent",
-                  "border-none",
-                  "text-white/90 text-sm",
-                  "focus:outline-none",
-                  "placeholder:text-white/20",
-                  "min-h-[44px]",
-                  isEnhancing && "opacity-30"
-                )}
-                style={{ overflow: "hidden" }}
-                showRing={false}
-              />
-            </div>
-
-            <div className="p-4 border-t border-white/[0.05] flex items-center justify-end">
-              <motion.button
-                type="button"
-                onClick={handleSendMessage}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={isTyping || isEnhancing || !value.trim()}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  "flex items-center gap-2",
-                  value.trim() ? "bg-white text-[#0A0A0B] shadow-lg shadow-white/10" : "bg-white/[0.05] text-white/40"
-                )}
-              >
-                {isTyping ? (
-                  <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />
-                ) : (
-                  <SendIcon className="w-4 h-4" />
-                )}
-                <span>Send</span>
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
-      </div>
-
+      {/* Enhance button — floats above the bar */}
       <AnimatePresence>
-        {isTyping && (
-          <motion.div
-            className="absolute bottom-8 mx-auto transform -translate-x-1/2 backdrop-blur-2xl bg-white/[0.02] rounded-full px-4 py-2 shadow-lg border border-white/[0.05]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+        {selection.hasSelection && !isEnhancing && (
+          <motion.button
+            key="enhance-btn"
+            type="button"
+            onClick={handleEnhance}
+            className="absolute z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white shadow-lg"
+            style={{
+              bottom: '100%',
+              left: '32px',
+              marginBottom: '8px',
+              background: 'linear-gradient(90deg, #de3582, #5e2e88)',
+            }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-7 rounded-full bg-white/[0.05] flex items-center justify-center text-center">
-                <span className="text-xs font-medium text-white/90 mb-0.5">AI</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-white/70">
-                <span>Thinking</span>
-                <TypingDots />
-              </div>
-            </div>
+            <Sparkles size={11} />
+            Enhance
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Shimmer overlay while enhancing */}
+      <AnimatePresence>
+        {isEnhancing && (
+          <motion.div
+            className="absolute inset-0 flex items-center px-8 pointer-events-none z-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TextShimmer className="text-sm text-white/70">
+              Enhancing your message...
+            </TextShimmer>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Mouse-following blob removed — ambient blobs pinned in ChatScreen */}
+      {/* Textarea */}
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => { setValue(e.target.value); adjustHeight(); }}
+        onKeyDown={handleKeyDown}
+        placeholder="Type your message..."
+        disabled={isEnhancing}
+        className={cn(
+          "py-2",
+          "min-h-[28px]",
+          isEnhancing && "opacity-30"
+        )}
+        style={{ overflow: "hidden" }}
+      />
+
+      {/* Send button */}
+      <motion.button
+        type="button"
+        onClick={handleSendMessage}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        disabled={isTyping || isEnhancing || !value.trim()}
+        className={cn(
+          "shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all",
+          value.trim()
+            ? "bg-white text-[#0A0A0B] shadow-lg shadow-white/10"
+            : "bg-white/[0.05] text-white/40"
+        )}
+      >
+        {isTyping ? (
+          <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />
+        ) : (
+          <SendIcon className="w-4 h-4" />
+        )}
+      </motion.button>
     </div>
   );
 }
@@ -336,3 +269,6 @@ function TypingDots() {
     </div>
   );
 }
+
+// Keep TypingDots export-ready if needed elsewhere
+export { TypingDots };

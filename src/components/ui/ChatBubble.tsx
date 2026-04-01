@@ -21,7 +21,7 @@ export function ChatBubble({
   return (
     <div
       className={cn(
-        "flex items-start gap-2 mb-4",
+        "flex items-start gap-3 mb-4",
         variant === "sent" && "flex-row-reverse",
         className,
       )}
@@ -47,7 +47,7 @@ export function ChatBubbleMessage({
   return (
     <div
       className={cn(
-        "rounded-lg p-3 max-w-[70%]",
+        "rounded-lg px-4 py-3 max-w-[70%] leading-relaxed",
         variant === "sent"
           ? "bg-primary text-primary-foreground border border-[#5e2e88]/30"
           : "bg-muted border border-white/[0.08]",

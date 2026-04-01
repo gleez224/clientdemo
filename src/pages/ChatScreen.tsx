@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Flag } from 'lucide-react'
 import type { Persona } from '@/data/personas'
 import type { Message, ScoreResult, BusinessContext } from '@/types'
 import {
@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/ChatBubble'
 import ChatMessageList from '@/components/ui/ChatMessageList'
 import { AnimatedAIChat } from '@/components/ui/AIChatInput'
-import { VoicePoweredOrb } from '@/components/ui/voice-powered-orb'
 import ScoreScreen from '@/components/ui/ScoreScreen'
 
 interface ChatScreenProps {
@@ -36,6 +35,15 @@ const GHOSTED_PHRASES = [
   "check my calendar", "get back to you", "over email", "too busy right now",
   "circle back", "let me think", "maybe next month", "not a good time",
 ]
+
+function extractOutcomeTag(content: string): { outcome: ConversationOutcome | null; clean: string } {
+  const match = content.match(/\[OUTCOME:(CLOSED|WALKED|GHOSTED)\]/i)
+  if (!match) return { outcome: null, clean: content }
+  return {
+    outcome: match[1].toLowerCase() as ConversationOutcome,
+    clean: content.replace(/\[OUTCOME:(CLOSED|WALKED|GHOSTED)\]/gi, '').trim(),
+  }
+}
 
 function detectOutcome(
   content: string,
@@ -94,7 +102,6 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null)
   const [isScoring, setIsScoring] = useState(false)
 
-  // Incrementing this re-triggers the seed useEffect for retry
   const [seedKey, setSeedKey] = useState(0)
 
   const isJordan = persona.id === 'ghoster'
@@ -107,7 +114,6 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Temp copy — does not mutate chatHistoryRef
           messages: [...chatHistoryRef.current, scoringMsg],
           system: fullSystemPrompt,
         }),
@@ -115,13 +121,11 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const raw = data.content[0].text
-      // Strip any markdown code fences if the model wrapped the JSON
       const jsonText = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
       const parsed: ScoreResult = JSON.parse(jsonText)
       setScoreResult(parsed)
     } catch (err) {
       console.error('Score fetch failed:', err)
-      // Fallback so the screen still appears
       setScoreResult({
         score: 0,
         pass: false,
@@ -148,20 +152,20 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
+
+      // Extract and strip any [OUTCOME:X] tag before displaying
+      const { outcome: tagOutcome, clean } = extractOutcomeTag(data.content[0].text)
+
       const assistantMsg: Message = {
         role: 'assistant',
-        content: data.content[0].text,
+        content: clean,
       }
       chatHistoryRef.current = [...chatHistoryRef.current, assistantMsg]
       assistantCountRef.current += 1
       setMessages(prev => [...prev, assistantMsg])
 
-      // Check for conversation outcome (skip during seeding)
-      const outcome = detectOutcome(
-        assistantMsg.content,
-        isJordan,
-        assistantCountRef.current
-      )
+      // Tag-based detection first, fall back to phrase matching
+      const outcome = tagOutcome ?? detectOutcome(clean, isJordan, assistantCountRef.current)
       if (outcome) {
         setConversationOutcome(outcome)
         fetchScore()
@@ -173,7 +177,6 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
     }
   }, [persona.systemPrompt, isJordan, fetchScore])
 
-  // Seed on mount, and on retry (seedKey change)
   useEffect(() => {
     let cancelled = false
 
@@ -197,9 +200,10 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
+        const { clean } = extractOutcomeTag(data.content[0].text)
         const openingLine: Message = {
           role: 'assistant',
-          content: data.content[0].text,
+          content: clean,
         }
         if (cancelled) return
         chatHistoryRef.current = [trigger, openingLine]
@@ -231,6 +235,11 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
     callApi()
   }
 
+  const handleEndAndScore = () => {
+    setConversationOutcome('walked')
+    fetchScore()
+  }
+
   const handleTryAgain = () => {
     setMessages([])
     chatHistoryRef.current = []
@@ -242,28 +251,8 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
 
   return (
     <div className="flex flex-col flex-1 min-h-0 relative">
-      {/* Identity bar */}
-      <div className="flex flex-col px-6 pt-5 pb-4 border-b border-black/8 dark:border-white/8 bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl shrink-0">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-medium text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 transition-colors duration-150 w-fit"
-        >
-          <ArrowLeft size={12} strokeWidth={2} />
-          Switch client
-        </button>
 
-        <p className="mt-2 text-xl font-bold text-black dark:text-white leading-tight">
-          {persona.name}
-        </p>
-
-        <p className="mt-0.5 text-[13px] text-black/50 dark:text-white/50">
-          {persona.archetype}
-          {isSeeding && <span className="ml-2">· Connecting…</span>}
-          {isScoring && <span className="ml-2">· Scoring…</span>}
-        </p>
-      </div>
-
-      {/* Chat column — centered container */}
+      {/* Chat column — unified container with header inside */}
       <div className="flex-1 min-h-0 flex flex-col px-4 py-3 overflow-hidden">
         <div className="flex-1 min-h-0 flex flex-col w-full max-w-[780px] mx-auto bg-white/[0.02] dark:bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden relative">
 
@@ -271,9 +260,55 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none opacity-0 dark:opacity-[0.012] bg-gradient-to-br from-violet-500 to-fuchsia-500 blur-[96px] -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full pointer-events-none opacity-0 dark:opacity-[0.012] bg-gradient-to-tr from-fuchsia-500 to-indigo-500 blur-[96px] translate-y-1/2 -translate-x-1/2" />
 
+          {/* Unified header — inside container */}
+          <div className="shrink-0 relative z-10 flex items-center justify-between px-4 h-16 border-b border-white/[0.06] bg-white/[0.02] backdrop-blur-xl">
+            {/* Left: avatar + name + archetype */}
+            <div className="flex items-center gap-3">
+              <img
+                src={persona.image}
+                alt={persona.name}
+                className="w-10 h-10 rounded-full object-cover shrink-0"
+              />
+              <div className="flex flex-col">
+                <p className="text-sm font-bold text-black dark:text-white leading-tight">
+                  {persona.name}
+                </p>
+                <p className="text-xs text-black/45 dark:text-white/40 leading-tight">
+                  {persona.archetype}
+                  {isSeeding && <span className="ml-1.5">· Connecting…</span>}
+                  {isScoring && <span className="ml-1.5">· Scoring…</span>}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: End & Score + Switch client */}
+            <div className="flex items-center gap-2">
+              {messages.length >= 4 && !conversationOutcome && (
+                <button
+                  onClick={handleEndAndScore}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white"
+                  style={{
+                    background: 'linear-gradient(#08080a, #08080a) padding-box, linear-gradient(90deg, #5e2e88, #de3582) border-box',
+                    border: '1px solid transparent',
+                  }}
+                >
+                  <Flag size={11} />
+                  End & Score
+                </button>
+              )}
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-black/50 dark:text-white/40 hover:text-black/80 dark:hover:text-white/70 border border-black/10 dark:border-white/10 transition-colors"
+              >
+                <ArrowLeft size={11} strokeWidth={2} />
+                Switch client
+              </button>
+            </div>
+          </div>
+
           {/* Message list */}
           <ChatMessageList className="flex-1">
-            {/* Empty state watermark — shown before first message arrives */}
+            {/* Empty state watermark */}
             {messages.length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center select-none pointer-events-none">
                 <p
@@ -291,7 +326,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
               </div>
             )}
 
-            {/* Spacer — pushes messages to the bottom when list is short */}
+            {/* Spacer — anchors messages to bottom when list is short */}
             {messages.length > 0 && <div className="flex-1" />}
 
             {messages.map((msg, i) => (
@@ -328,13 +363,6 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
             )}
           </ChatMessageList>
 
-          {/* Orb — ambient indicator, bottom left */}
-          <div className="shrink-0 px-4 pt-3 pb-1 flex">
-            <div className="w-12 h-12 rounded-full overflow-hidden opacity-80">
-              <VoicePoweredOrb enableVoiceControl={false} />
-            </div>
-          </div>
-
           {/* Input */}
           <div className={`shrink-0 border-t border-white/[0.06] ${isLoading || isSeeding || !!conversationOutcome ? 'pointer-events-none opacity-50' : ''}`}>
             <AnimatedAIChat onSend={handleSend} />
@@ -343,7 +371,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         </div>
       </div>
 
-      {/* Score screen overlay — renders when scoreResult is ready */}
+      {/* Score screen overlay */}
       {scoreResult && (
         <ScoreScreen
           scoreResult={scoreResult}

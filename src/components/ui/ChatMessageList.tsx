@@ -14,7 +14,7 @@ export default function ChatMessageList({ children, className }: ChatMessageList
   })
 
   return (
-    <div className={cn('flex flex-col overflow-y-auto p-8', className)}>
+    <div className={cn('flex flex-col justify-end overflow-y-auto p-8', className)}>
       {children}
       <div ref={bottomRef} />
     </div>
