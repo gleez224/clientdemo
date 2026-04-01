@@ -1,51 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* shadcn HSL tokens — light mode */
+    --background: 240 10% 96%;
+    --foreground: 240 20% 5%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 240 20% 5%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 240 20% 5%;
+    --primary: 240 20% 5%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 93%;
+    --secondary-foreground: 240 20% 5%;
+    --muted: 240 10% 93%;
+    --muted-foreground: 240 5% 45%;
+    --accent: 240 10% 93%;
+    --accent-foreground: 240 20% 5%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --radius: 0.5rem;
+    --border: 240 10% 88%;
+    --input: 240 10% 88%;
+    --ring: 270 50% 36%;
+    --radius: 1rem;
+
+    /* Brand raw vars — light */
+    --gradient-accent: linear-gradient(135deg, #5e2e88, #de3582, #ec533b, #f5912d);
+    --surface: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glow-purple: rgba(94, 46, 136, 0.25);
+    --glow-pink: rgba(222, 53, 130, 0.2);
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* shadcn HSL tokens — dark mode */
+    --background: 240 11% 4%;
+    --foreground: 0 0% 100%;
+    --card: 240 12% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 12% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 240 20% 5%;
+    --secondary: 240 12% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 12% 12%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 240 12% 12%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 240 12% 14%;
+    --input: 240 12% 14%;
+    --ring: 270 50% 60%;
+    --radius: 1rem;
+
+    /* Brand raw vars — dark */
+    --gradient-accent: linear-gradient(135deg, #5e2e88, #de3582, #ec533b, #f5912d);
+    --surface: rgba(255, 255, 255, 0.04);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glow-purple: rgba(94, 46, 136, 0.35);
+    --glow-pink: rgba(222, 53, 130, 0.25);
   }
 }
 
@@ -53,7 +72,58 @@
   * {
     @apply border-border;
   }
+
+  html {
+    background-color: #f4f4f6;
+  }
+
+  html.dark {
+    background-color: #08080a;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 400;
+  }
+}
+
+/* ── Glassmorphism ─────────────────────────────────────── */
+@layer components {
+  .glass {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+  }
+
+  .glass-sm {
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+  }
+}
+
+/* ── Gradient utilities ────────────────────────────────── */
+@layer utilities {
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .text-gradient-accent {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-gradient-accent {
+    border: 1px solid transparent;
+    background-image: var(--gradient-accent);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
   }
 }

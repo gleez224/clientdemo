@@ -4,10 +4,13 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Barlow Condensed', 'sans-serif'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        md: 'calc(var(--radius) - 4px)',
+        sm: 'calc(var(--radius) - 8px)',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -43,6 +46,12 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        brand: {
+          purple: '#5e2e88',
+          pink: '#de3582',
+          orange: '#ec533b',
+          amber: '#f5912d',
+        },
       },
       keyframes: {
         'accordion-down': {
