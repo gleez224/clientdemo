@@ -47,8 +47,10 @@ export function ChatBubbleMessage({
   return (
     <div
       className={cn(
-        "rounded-lg p-3",
-        variant === "sent" ? "bg-primary text-primary-foreground" : "bg-muted",
+        "rounded-lg p-3 max-w-[70%]",
+        variant === "sent"
+          ? "bg-primary text-primary-foreground border border-[#5e2e88]/30"
+          : "bg-muted border border-white/[0.08]",
         className
       )}
     >

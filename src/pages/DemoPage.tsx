@@ -79,12 +79,13 @@ export default function DemoPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-6 justify-center md:justify-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
               {generatedPersonas.map((persona) => (
                 <motion.div
                   key={persona.id}
                   variants={cardVariants}
                   onClick={() => setActivePersona(persona)}
+                  className="w-full flex justify-center"
                 >
                   <ProfileCard
                     name={persona.name}

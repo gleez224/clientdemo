@@ -110,12 +110,12 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   const [isTyping, setIsTyping] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [, startTransition] = useTransition();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [, setMousePosition] = useState({ x: 0, y: 0 });
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 60,
+    minHeight: 44,
     maxHeight: 200,
   });
-  const [inputFocused, setInputFocused] = useState(false);
+  const [, setInputFocused] = useState(false);
 
   const selection = useTextSelection(textareaRef);
 
@@ -186,9 +186,9 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   };
 
   return (
-    <div className="min-h-0 flex flex-col w-full items-center justify-center bg-white/[0.03] text-white p-4 relative overflow-hidden">
+    <div className="min-h-0 flex flex-col w-full items-center justify-center bg-white/[0.03] text-white px-8 py-3 relative overflow-hidden">
 
-      <div className="w-full max-w-2xl mx-auto relative">
+      <div className="w-full relative">
         <motion.div
           className="relative z-10"
           initial={{ opacity: 0, y: 20 }}
@@ -261,7 +261,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
                   "text-white/90 text-sm",
                   "focus:outline-none",
                   "placeholder:text-white/20",
-                  "min-h-[60px]",
+                  "min-h-[44px]",
                   isEnhancing && "opacity-30"
                 )}
                 style={{ overflow: "hidden" }}
@@ -315,13 +315,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
         )}
       </AnimatePresence>
 
-      {inputFocused && (
-        <motion.div
-          className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.02] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 blur-[96px]"
-          animate={{ x: mousePosition.x - 400, y: mousePosition.y - 400 }}
-          transition={{ type: "spring", damping: 25, stiffness: 150, mass: 0.5 }}
-        />
-      )}
+      {/* Mouse-following blob removed — ambient blobs pinned in ChatScreen */}
     </div>
   );
 }

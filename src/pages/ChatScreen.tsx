@@ -265,10 +265,35 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
 
       {/* Chat column — centered container */}
       <div className="flex-1 min-h-0 flex flex-col px-4 py-3 overflow-hidden">
-        <div className="flex-1 min-h-0 flex flex-col w-full max-w-[780px] mx-auto bg-white/[0.02] dark:bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col w-full max-w-[780px] mx-auto bg-white/[0.02] dark:bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden relative">
+
+          {/* Pinned ambient blobs — dark mode only */}
+          <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none opacity-0 dark:opacity-[0.012] bg-gradient-to-br from-violet-500 to-fuchsia-500 blur-[96px] -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full pointer-events-none opacity-0 dark:opacity-[0.012] bg-gradient-to-tr from-fuchsia-500 to-indigo-500 blur-[96px] translate-y-1/2 -translate-x-1/2" />
 
           {/* Message list */}
           <ChatMessageList className="flex-1">
+            {/* Empty state watermark — shown before first message arrives */}
+            {messages.length === 0 && (
+              <div className="flex-1 flex flex-col items-center justify-center select-none pointer-events-none">
+                <p
+                  className="text-[72px] font-black uppercase tracking-tight opacity-[0.04] text-black dark:text-white leading-none text-center"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                >
+                  {persona.name}
+                </p>
+                <p
+                  className="text-base font-bold uppercase tracking-widest opacity-[0.03] text-black dark:text-white mt-2 text-center"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                >
+                  {persona.archetype}
+                </p>
+              </div>
+            )}
+
+            {/* Spacer — pushes messages to the bottom when list is short */}
+            {messages.length > 0 && <div className="flex-1" />}
+
             {messages.map((msg, i) => (
               <ChatBubble key={i} variant={msg.role === 'user' ? 'sent' : 'received'}>
                 {msg.role === 'assistant' && (
@@ -303,9 +328,9 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
             )}
           </ChatMessageList>
 
-          {/* Orb — 48×48 ambient indicator, bottom left */}
+          {/* Orb — ambient indicator, bottom left */}
           <div className="shrink-0 px-4 pt-3 pb-1 flex">
-            <div className={`w-12 h-12 rounded-full overflow-hidden opacity-80 ${isLoading ? 'animate-pulse' : ''}`}>
+            <div className="w-12 h-12 rounded-full overflow-hidden opacity-80">
               <VoicePoweredOrb enableVoiceControl={false} />
             </div>
           </div>
