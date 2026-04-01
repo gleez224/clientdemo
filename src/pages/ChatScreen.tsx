@@ -37,11 +37,14 @@ const GHOSTED_PHRASES = [
 ]
 
 function extractOutcomeTag(content: string): { outcome: ConversationOutcome | null; clean: string } {
-  const match = content.match(/\[OUTCOME:(CLOSED|WALKED|GHOSTED)\]/i)
+  // Allow optional whitespace around the keyword: [OUTCOME: CLOSED] or [OUTCOME:CLOSED]
+  const match = content.match(/\[OUTCOME:\s*(CLOSED|WALKED|GHOSTED)\s*\]/i)
   if (!match) return { outcome: null, clean: content }
+  const outcome = match[1].toUpperCase()
+  console.log('[OUTCOME TAG] Detected in raw response:', outcome)
   return {
     outcome: match[1].toLowerCase() as ConversationOutcome,
-    clean: content.replace(/\[OUTCOME:(CLOSED|WALKED|GHOSTED)\]/gi, '').trim(),
+    clean: content.replace(/\[OUTCOME:\s*(CLOSED|WALKED|GHOSTED)\s*\]/gi, '').trim(),
   }
 }
 
@@ -107,6 +110,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
   const isJordan = persona.id === 'ghoster'
 
   const fetchScore = useCallback(async () => {
+    console.log('[SCORE] fetchScore fired — history length:', chatHistoryRef.current.length)
     setIsScoring(true)
     const scoringMsg: Message = { role: 'user', content: SCORE_REQUEST }
     try {
@@ -116,16 +120,19 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         body: JSON.stringify({
           messages: [...chatHistoryRef.current, scoringMsg],
           system: fullSystemPrompt,
+          maxTokens: 2048,
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       const raw = data.content[0].text
+      console.log('[SCORE] Raw response length:', raw.length)
       const jsonText = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
       const parsed: ScoreResult = JSON.parse(jsonText)
+      console.log('[SCORE] Parsed successfully — score:', parsed.score)
       setScoreResult(parsed)
     } catch (err) {
-      console.error('Score fetch failed:', err)
+      console.error('[SCORE] fetchScore failed:', err)
       setScoreResult({
         score: 0,
         pass: false,
@@ -136,7 +143,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
     } finally {
       setIsScoring(false)
     }
-  }, [persona.systemPrompt])
+  }, [fullSystemPrompt])
 
   const callApi = useCallback(async () => {
     setIsLoading(true)
@@ -166,7 +173,9 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
 
       // Tag-based detection first, fall back to phrase matching
       const outcome = tagOutcome ?? detectOutcome(clean, isJordan, assistantCountRef.current)
+      console.log('[OUTCOME] tag:', tagOutcome, '| phrase:', detectOutcome(clean, isJordan, assistantCountRef.current), '| final:', outcome)
       if (outcome) {
+        console.log('[OUTCOME] Setting conversationOutcome →', outcome, '— firing fetchScore')
         setConversationOutcome(outcome)
         fetchScore()
       }
@@ -372,15 +381,21 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
       </div>
 
       {/* Score screen overlay */}
-      {scoreResult && (
-        <ScoreScreen
-          scoreResult={scoreResult}
-          outcome={conversationOutcome!}
-          personaName={persona.name}
-          onTryAgain={handleTryAgain}
-          onSwitchClient={onBack}
-        />
-      )}
+      {(() => {
+        const showScoreScreen = !!scoreResult
+        if (conversationOutcome && !showScoreScreen) {
+          console.error('[SCORE] Outcome set but ScoreScreen not showing:', conversationOutcome, '— scoreResult:', scoreResult)
+        }
+        return showScoreScreen ? (
+          <ScoreScreen
+            scoreResult={scoreResult!}
+            outcome={conversationOutcome!}
+            personaName={persona.name}
+            onTryAgain={handleTryAgain}
+            onSwitchClient={onBack}
+          />
+        ) : null
+      })()}
     </div>
   )
 }
