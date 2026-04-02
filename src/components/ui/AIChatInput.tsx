@@ -94,7 +94,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [, setMousePosition] = useState({ x: 0, y: 0 });
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
-    minHeight: 28,
+    minHeight: 44,
     maxHeight: 160,
   });
 
@@ -161,7 +161,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   };
 
   return (
-    <div className="flex items-end gap-3 w-full px-8 min-h-[56px] py-3 bg-white/[0.03] text-white relative overflow-hidden">
+    <div className="flex items-end gap-3 w-full px-8 min-h-[56px] py-3 bg-white/[0.03] text-white relative">
 
       {/* Enhance button — floats above the bar */}
       <AnimatePresence>
@@ -215,7 +215,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
         disabled={isEnhancing}
         className={cn(
           "py-2",
-          "min-h-[28px]",
+          "min-h-[44px]",
           isEnhancing && "opacity-30"
         )}
         style={{ overflow: "hidden" }}

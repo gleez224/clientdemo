@@ -48,13 +48,6 @@ function extractOutcomeTag(content: string): { outcome: ConversationOutcome | nu
   }
 }
 
-function stripOutcomeTags(content: string): string {
-  return content
-    .replace(/\[OUTCOME:CLOSED\]/gi, '')
-    .replace(/\[OUTCOME:WALKED\]/gi, '')
-    .replace(/\[OUTCOME:GHOSTED\]/gi, '')
-    .trim()
-}
 
 function detectOutcome(
   content: string,
@@ -127,7 +120,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...chatHistoryRef.current, scoringMsg],
-          system: fullSystemPrompt,
+          system: 'You are a sales training coach. Evaluate conversations and return only valid JSON scores. Never respond as the persona. Never stay in character. Only output the JSON object requested.',
           maxTokens: 2048,
         }),
       })
@@ -146,6 +139,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         pass: false,
         strengths: [],
         improvements: [],
+        closingSuggestion: null,
         summary: 'Could not load score. Please try again.',
       })
     } finally {
@@ -169,10 +163,8 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
       const data = await res.json()
 
       const rawContent = data.content[0].text
-      // 1. Detect on raw content
-      const { outcome: tagOutcome } = extractOutcomeTag(rawContent)
-      // 2. Strip all outcome tags for display
-      const displayContent = stripOutcomeTags(rawContent)
+      // Detect outcome tag and strip it in one pass
+      const { outcome: tagOutcome, clean: displayContent } = extractOutcomeTag(rawContent)
 
       const assistantMsg: Message = {
         role: 'assistant',
@@ -222,7 +214,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         const data = await res.json()
         const openingLine: Message = {
           role: 'assistant',
-          content: stripOutcomeTags(data.content[0].text),
+          content: extractOutcomeTag(data.content[0].text).clean,
         }
         if (cancelled) return
         chatHistoryRef.current = [trigger, openingLine]

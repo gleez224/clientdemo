@@ -3,19 +3,20 @@ import type { BusinessContext, Persona } from '@/types'
 import { SPEECH_RULES, OUTCOME_RULES } from '@/data/personas'
 
 function buildPrompt(ctx: BusinessContext): string {
-  return `Generate 5 client personas for someone practicing sales pitches for this business:
+  return `Generate 6 client personas for someone practicing sales pitches for this business:
 
 What they sell: ${ctx.whatYouSell}
 Target client: ${ctx.targetClient}
 Their pitch: ${ctx.pitch}
 Pricing: ${ctx.pricing}
 
-Generate 5 personas that represent realistic prospects for THIS specific business. Include these archetypes:
+Generate exactly 6 personas that represent realistic prospects for THIS specific business. Include these archetypes:
 1. The Skeptic — burned before, needs proof
 2. The Ghoster — interested but avoids commitment
 3. The Negotiator — analytical, questions every number
 4. Already Taken — working with someone else
 5. The Operator — already successful, needs a strong reason to switch
+6. The Open Door — genuinely interested, no current contracts, easy to close IF the pitch is personalized. Warm, calm, not a pushover.
 
 Each persona must:
 - Be a realistic prospect for THIS specific business (not generic)

@@ -67,7 +67,18 @@ After 8-10 exchanges, reach a conclusion.
 If the person asked smart questions, listened, and showed genuine curiosity about your situation — agree to a next step (CLOSED).
 If they kept pitching without listening — end the conversation directly (WALKED).
 Jordan specifically: if not meaningfully engaged after 6 messages, just stop responding with a vague excuse and go silent (GHOSTED).
-Do not keep going indefinitely. Real conversations end.`
+Do not keep going indefinitely. Real conversations end.
+
+WHEN ENDING THE CONVERSATION:
+Write your final natural human message — whatever your character would actually say last.
+Then on a NEW LINE add the tag: [OUTCOME:CLOSED], [OUTCOME:WALKED], or [OUTCOME:GHOSTED]
+That is all. Nothing else.
+Do NOT explain the conversation.
+Do NOT analyze what happened.
+Do NOT give feedback.
+Do NOT break character.
+You are a person ending a DM conversation, not a coach.
+After the tag: complete silence. You are done.`
 
 export const personas: Persona[] = [
   {

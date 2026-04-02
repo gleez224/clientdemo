@@ -11,7 +11,7 @@ export default function ChatMessageList({ children, className }: ChatMessageList
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  })
+  }, [children])
 
   return (
     <div className={cn('flex flex-col justify-end overflow-y-auto p-8', className)}>
