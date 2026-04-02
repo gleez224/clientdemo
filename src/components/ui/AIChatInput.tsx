@@ -161,7 +161,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   };
 
   return (
-    <div className="flex items-center gap-3 w-full px-8 h-14 bg-white/[0.03] text-white relative">
+    <div className="flex items-end gap-3 w-full px-8 min-h-[56px] py-3 bg-white/[0.03] text-white relative overflow-hidden">
 
       {/* Enhance button — floats above the bar */}
       <AnimatePresence>
