@@ -71,20 +71,23 @@ function detectOutcome(
 }
 
 const SCORE_REQUEST =
-  `[SCORE_REQUEST] Evaluate this conversation as a sales training coach. Return ONLY valid JSON, no other text:
+  `Evaluate the trainee's sales technique in this conversation.
+Message 1 = their first real message (seed already removed).
+
+Return ONLY this JSON:
 {
-  "score": <number 0-100>,
-  "pass": <boolean, true if score >= 70>,
-  "strengths": [<string>, ...],
+  "score": <0-100>,
+  "pass": <true if score >= 70>,
+  "strengths": [<specific to this conversation>],
   "improvements": [
     {
-      "messageIndex": <1-based index of the user message being reviewed>,
-      "whatYouSaid": "<exact quote of what the user said in that message>",
-      "whyItFailed": "<one sentence, direct — why this hurt the sale>",
-      "whatToSayInstead": "<the exact alternative message they should have sent — real, direct, human — Jagged Writing Protocol: short sentences, no fluff, specific>"
+      "messageIndex": <1 = first real trainee message>,
+      "whatYouSaid": "<exact quote>",
+      "whyItFailed": "<one sentence, specific to this persona and offer>",
+      "whatToSayInstead": "<exact replacement — Jagged Writing Protocol: short, direct, human, specific to this persona's actual objections>"
     }
   ],
-  "closingSuggestion": <if score < 70: a persona-specific closing line the user could have used to turn this conversation around, written in Jagged Writing Protocol style — real attitude, short sentences, references the persona's specific objections. If score >= 70: null>,
+  "closingSuggestion": <if score < 70: one closing line specific to THIS persona's objections from this conversation — Jagged Writing Protocol. If score >= 70: null>,
   "summary": "<one sentence>"
 }`
 
@@ -119,8 +122,29 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...chatHistoryRef.current, scoringMsg],
-          system: 'You are a sales training coach. Evaluate conversations and return only valid JSON scores. Never respond as the persona. Never stay in character. Only output the JSON object requested.',
+          messages: [...chatHistoryRef.current.slice(2), scoringMsg],
+          system: `You are a sales training coach evaluating a practice pitch.
+
+WHAT THE TRAINEE IS SELLING:
+Business: ${businessContext.businessName}
+What they sell: ${businessContext.whatYouSell}
+Target client: ${businessContext.targetClient}
+Their pitch: ${businessContext.pitch}
+Pricing: ${businessContext.pricing}
+
+THE PROSPECT THEY WERE PITCHING:
+Name: ${persona.name}
+Archetype: ${persona.archetype}
+Description: ${persona.description}
+Personality and objections: ${persona.systemPrompt}
+
+SCORING RULES:
+- The seed trigger has already been removed from this history
+- Message 1 = the trainee's first real message
+- Score based on sales technique: did they use ACA? Ask before pitching? Handle objections with specifics? Move toward a close?
+- closingSuggestion must reference this specific persona's actual objections — not generic advice
+- Never respond as the persona
+- Output JSON only`,
           maxTokens: 2048,
         }),
       })
@@ -145,7 +169,7 @@ export default function ChatScreen({ persona, businessContext, onBack }: ChatScr
     } finally {
       setIsScoring(false)
     }
-  }, [fullSystemPrompt])
+  }, [businessContext, persona])
 
   const callApi = useCallback(async () => {
     setIsLoading(true)

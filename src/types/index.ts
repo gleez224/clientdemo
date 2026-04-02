@@ -24,6 +24,7 @@ export interface AppState {
 }
 
 export interface BusinessContext {
+  businessName: string
   whatYouSell: string
   targetClient: string
   pitch: string

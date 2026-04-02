@@ -13,6 +13,11 @@ const fields: {
   placeholder: string
 }[] = [
   {
+    key: 'businessName',
+    label: 'Business name',
+    placeholder: 'e.g. Scaled Creators',
+  },
+  {
     key: 'whatYouSell',
     label: 'What do you sell?',
     placeholder: 'e.g. Social media management for local businesses',
@@ -46,6 +51,7 @@ const itemVariants = {
 
 export default function BusinessOnboarding({ onSubmit }: BusinessOnboardingProps) {
   const [form, setForm] = useState<BusinessContext>({
+    businessName: '',
     whatYouSell: '',
     targetClient: '',
     pitch: '',
@@ -58,6 +64,7 @@ export default function BusinessOnboarding({ onSubmit }: BusinessOnboardingProps
     e.preventDefault()
     if (!allFilled) return
     onSubmit({
+      businessName: form.businessName.trim(),
       whatYouSell: form.whatYouSell.trim(),
       targetClient: form.targetClient.trim(),
       pitch: form.pitch.trim(),
