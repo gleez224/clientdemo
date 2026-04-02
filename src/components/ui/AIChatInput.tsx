@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useTransition } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { SendIcon, LoaderIcon, Sparkles } from "lucide-react";
+import { SendIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
 import { useTextSelection } from "@/hooks/useTextSelection";
@@ -91,9 +91,7 @@ interface AIChatInputProps {
 
 export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   const [value, setValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
-  const [, startTransition] = useTransition();
   const [, setMousePosition] = useState({ x: 0, y: 0 });
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 28,
@@ -120,14 +118,8 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
   const handleSendMessage = () => {
     if (value.trim()) {
       onSend?.(value.trim());
-      startTransition(() => {
-        setIsTyping(true);
-        setTimeout(() => {
-          setIsTyping(false);
-          setValue("");
-          adjustHeight(true);
-        }, 3000);
-      });
+      setValue("");
+      adjustHeight(true);
     }
   };
 
@@ -235,7 +227,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
         onClick={handleSendMessage}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        disabled={isTyping || isEnhancing || !value.trim()}
+        disabled={isEnhancing || !value.trim()}
         className={cn(
           "shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all",
           value.trim()
@@ -243,11 +235,7 @@ export function AnimatedAIChat({ onSend }: AIChatInputProps = {}) {
             : "bg-white/[0.05] text-white/40"
         )}
       >
-        {isTyping ? (
-          <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />
-        ) : (
-          <SendIcon className="w-4 h-4" />
-        )}
+        <SendIcon className="w-4 h-4" />
       </motion.button>
     </div>
   );
